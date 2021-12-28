@@ -24,8 +24,11 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Test;
 
 import static org.mockito.Matchers.anyMap;
-import static org.mockito.Mockito.*;
-
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.anyInt;
 
 public class MetricsReporterHookTest {
     static final String TESTSERVICENAME = "test.Service";
@@ -47,6 +50,6 @@ public class MetricsReporterHookTest {
         Thread.sleep(2);
         hook.postCall(request, HttpResponseStatus.OK, handlerInfo);
 
-        verify(mockCollector).gauge(eq("response."+TESTSERVICENAME+"."+TESTMETHODNAME), anyInt());
+        verify(mockCollector).distribution(eq("response." + TESTSERVICENAME + "." + TESTMETHODNAME), anyInt());
     }
 }

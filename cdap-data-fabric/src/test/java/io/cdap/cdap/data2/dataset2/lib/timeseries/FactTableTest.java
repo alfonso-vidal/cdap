@@ -700,6 +700,11 @@ public class FactTableTest {
       // no-op
     }
 
+     @Override
+    public void distribution(String metricName, double value) {
+      // no-op
+    }
+
     long getLastIncrementSize() {
       return lastIncrementSize;
     }

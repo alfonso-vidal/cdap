@@ -61,4 +61,9 @@ public final class NoopMetricsContext implements MetricsContext {
   public void gauge(String metricName, long value) {
     // no-op
   }
+
+  @Override
+  public void distribution(String metricName, double value) {
+    // no-op
+  }
 }

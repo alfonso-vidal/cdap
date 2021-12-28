@@ -48,6 +48,7 @@ public class AggregatedMetricsCollectionServiceTest {
   private static final String INSTANCE = "testInstance";
   private static final String METRIC = "metric";
   private static final String GAUGE_METRIC = "gaugeMetric";
+  private static final String DISTRIBUTION_METRIC = "distributionMetric";
 
   private Long getMetricValue(Collection<MetricValue> metrics, String metricName) {
     for (MetricValue metricValue : metrics) {
@@ -79,6 +80,49 @@ public class AggregatedMetricsCollectionServiceTest {
                                                          Constants.Metrics.Tag.RUN_ID, RUNID);
 
     try {
+      // publish distribution with empty tags
+      service.getContext(EMPTY_TAGS).distribution(DISTRIBUTION_METRIC, 40.3);
+      service.getContext(EMPTY_TAGS).distribution(DISTRIBUTION_METRIC, 9);
+      service.getContext(EMPTY_TAGS).distribution(DISTRIBUTION_METRIC, 57);
+      service.getContext(EMPTY_TAGS).distribution(DISTRIBUTION_METRIC, 200000);
+
+      long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+      MetricValues metricValues = null;
+      while (timeout > System.currentTimeMillis()) {
+        metricValues = published.poll(100, TimeUnit.MILLISECONDS);
+        if (metricValues == null) {
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      Collection<MetricValue> values = metricValues.getMetrics();
+
+      MetricsContext baseCollector = service.getContext(baseTags);
+      MetricsContext metricsContext = baseCollector.childContext(Constants.Metrics.Tag.HANDLER, HANDLER)
+              .childContext(Constants.Metrics.Tag.INSTANCE_ID, INSTANCE);
+
+      //publish distribution with non empty tags
+      baseCollector.distribution(DISTRIBUTION_METRIC, 40.3);
+      metricsContext.distribution(DISTRIBUTION_METRIC, 40.3);
+      baseCollector.distribution(DISTRIBUTION_METRIC, 9);
+      metricsContext.distribution(DISTRIBUTION_METRIC, 9);
+      baseCollector.distribution(DISTRIBUTION_METRIC, 57);
+      metricsContext.distribution(DISTRIBUTION_METRIC, 57);
+      baseCollector.distribution(DISTRIBUTION_METRIC, 200000);
+      metricsContext.distribution(DISTRIBUTION_METRIC, 200000);
+
+      timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+      while (timeout > System.currentTimeMillis()) {
+        metricValues = published.poll(100, TimeUnit.MILLISECONDS);
+        if (metricValues == null) {
+          continue;
+        } else {
+          break;
+        }
+      }
+
       // The first section tests with empty tags.
       // Publish couple metrics with empty tags, they should be aggregated.
       service.getContext(EMPTY_TAGS).increment(METRIC, Integer.MAX_VALUE);
@@ -100,9 +144,6 @@ public class AggregatedMetricsCollectionServiceTest {
       verifyGaugeMetricsValue(published, ImmutableMap.of(0, 3L));
 
       // define collectors for non-empty tags
-      MetricsContext baseCollector = service.getContext(baseTags);
-      MetricsContext metricsContext = baseCollector.childContext(Constants.Metrics.Tag.HANDLER, HANDLER)
-        .childContext(Constants.Metrics.Tag.INSTANCE_ID, INSTANCE);
 
       // increment metrics for various collectors
       baseCollector.increment(METRIC, Integer.MAX_VALUE);
@@ -134,6 +175,8 @@ public class AggregatedMetricsCollectionServiceTest {
 
       metricsContext.gauge(GAUGE_METRIC, 0);
       verifyCounterMetricsValue(published, ImmutableMap.of(6, ImmutableMap.of(GAUGE_METRIC, 0L)));
+
+
     } finally {
       service.stopAndWait();
     }

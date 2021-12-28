@@ -37,4 +37,12 @@ public interface MetricsCollector {
    * @param value value of the metric.
    */
   void gauge(String metricName, long value);
+
+  /**
+   * Capture a distribution metric. Typically useful
+   * for high frequency metrics Ex. API response times.
+   * @param metricName name of the metric
+   * @param value corresponding value
+   */
+  void distribution(String metricName, double value);
 }

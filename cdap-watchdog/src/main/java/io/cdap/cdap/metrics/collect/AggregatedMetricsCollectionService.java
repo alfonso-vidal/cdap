@@ -237,6 +237,11 @@ public abstract class AggregatedMetricsCollectionService extends AbstractExecuti
     }
 
     @Override
+    public void distribution(String metricName, double value) {
+      emitters.getUnchecked(tags).getUnchecked(metricName).distribution(value);
+    }
+
+    @Override
     public MetricsContext childContext(String tagName, String tagValue) {
       ImmutableMap<String, String> allTags = ImmutableMap.<String, String>builder()
         .putAll(tags).put(tagName, tagValue).build();

@@ -15,11 +15,14 @@
  */
 package io.cdap.cdap.metrics.collect;
 
+import com.google.common.primitives.Doubles;
 import io.cdap.cdap.api.metrics.MetricType;
 import io.cdap.cdap.api.metrics.MetricValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,8 +36,10 @@ final class AggregatedMetricsEmitter implements MetricsEmitter {
   private final String name;
   // metric value
   private final AtomicLong value;
-  // specifies if the metric type is gauge or counter
-  private final AtomicBoolean gaugeUsed;
+
+  private volatile MetricType metricType = MetricType.COUNTER;
+
+  private ArrayList<Double> values = new ArrayList<>();
 
   AggregatedMetricsEmitter(String name) {
     if (name == null || name.isEmpty()) {
@@ -43,7 +48,6 @@ final class AggregatedMetricsEmitter implements MetricsEmitter {
 
     this.name = name;
     this.value = new AtomicLong();
-    this.gaugeUsed = new AtomicBoolean(false);
   }
 
   void increment(long value) {
@@ -54,13 +58,49 @@ final class AggregatedMetricsEmitter implements MetricsEmitter {
   @Override
   public MetricValue emit() {
     // todo CDAP-2195 - potential race condition , reseting value and type has to be done together
-    long value = this.value.getAndSet(0);
-    MetricType type = gaugeUsed.getAndSet(false) ? MetricType.GAUGE : MetricType.COUNTER;
-    return new MetricValue(name, type, value);
+    if (metricType == MetricType.DISTRIBUTION) {
+      ArrayList<Double> valuesToBeEmitted;
+      synchronized (this) {
+        valuesToBeEmitted = values;
+        values = new ArrayList<>();
+      }
+
+      MetricValue returnValue = new MetricValue(name, Doubles.toArray(valuesToBeEmitted));
+      return returnValue;
+    } else {
+      long value = this.value.getAndSet(0);
+      return new MetricValue(name, metricType, value);
+    }
   }
 
   public void gauge(long value) {
     this.value.set(value);
-    this.gaugeUsed.set(true);
+    this.metricType = MetricType.GAUGE;
   }
+
+  public void distribution(double value) {
+    synchronized (this) {
+      values.add(value);
+    }
+    /*
+    if (bucketCounts == null) {
+      bucketCounts = new long[MetricValue.RESPONSE_TIME_BOUNDS_MS.length + 1];
+      Arrays.fill(bucketCounts, 0);
+      this.metricType = MetricType.DISTRIBUTION;
+    }
+
+    // TODO make logic more general and not hardcode 10
+    int bucket = 0;
+    double residue = value;
+    while (residue > 10 && bucket < MetricValue.RESPONSE_TIME_BOUNDS_MS.length) {
+      bucket++;
+      residue = residue / 10;
+    }
+
+    bucketCounts[bucket] = bucketCounts[bucket] + 1;
+
+     */
+  }
+
+
 }

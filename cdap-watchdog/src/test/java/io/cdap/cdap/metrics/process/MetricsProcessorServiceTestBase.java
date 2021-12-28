@@ -23,6 +23,7 @@ import com.google.inject.util.Modules;
 import io.cdap.cdap.api.messaging.TopicNotFoundException;
 import io.cdap.cdap.api.metrics.MetricStore;
 import io.cdap.cdap.api.metrics.MetricType;
+import io.cdap.cdap.api.metrics.MetricValue;
 import io.cdap.cdap.api.metrics.MetricValues;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.guice.IOModule;
@@ -53,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +64,7 @@ abstract class MetricsProcessorServiceTestBase extends MetricsTestBase {
 
   static final String COUNTER_METRIC_NAME = "counter_metric";
   static final String GAUGE_METRIC_NAME_PREFIX = "gauge_metric";
+  static final String DISTRIBUTION_METRIC_NAME_PREFIX = "distribution_metric";
 
   static final Map<String, String> METRICS_CONTEXT = ImmutableMap.<String, String>builder()
     .put(Constants.Metrics.Tag.NAMESPACE, "NS_1")
@@ -104,22 +107,31 @@ abstract class MetricsProcessorServiceTestBase extends MetricsTestBase {
                                                     Map<String, Long> expected, String expectedMetricPrefix,
                                                     MetricType metricType)
     throws TopicNotFoundException, IOException {
-    MetricValues metric;
-    if (MetricType.GAUGE.equals(metricType)) {
-      String metricName = GAUGE_METRIC_NAME_PREFIX + i;
-      metric =
-        new MetricValues(metricsContext, metricName, startTimeSecs, i, metricType);
-      expected.put(expectedMetricPrefix + metricName, (long) i);
-    } else {
-      metric =
-        new MetricValues(metricsContext, COUNTER_METRIC_NAME, i, 1, metricType);
-      String expectedCounterMetricName = expectedMetricPrefix + COUNTER_METRIC_NAME;
-      Long currentValue = expected.get(expectedCounterMetricName);
-      if (currentValue == null) {
-        expected.put(expectedCounterMetricName, 1L);
-      } else {
-        expected.put(expectedCounterMetricName, currentValue + 1);
-      }
+    MetricValues metric = null;
+    switch (metricType) {
+      case GAUGE:
+        String metricName = GAUGE_METRIC_NAME_PREFIX + i;
+        metric =
+                new MetricValues(metricsContext, metricName, startTimeSecs, i, metricType);
+        expected.put(expectedMetricPrefix + metricName, (long) i);
+        break;
+      case COUNTER:
+        metric =
+                new MetricValues(metricsContext, COUNTER_METRIC_NAME, i, 1, metricType);
+        String expectedCounterMetricName = expectedMetricPrefix + COUNTER_METRIC_NAME;
+        Long currentValue = expected.get(expectedCounterMetricName);
+        if (currentValue == null) {
+          expected.put(expectedCounterMetricName, 1L);
+        } else {
+          expected.put(expectedCounterMetricName, currentValue + 1);
+        }
+        break;
+      case DISTRIBUTION:
+        MetricValue distributionMetricValue = new MetricValue(DISTRIBUTION_METRIC_NAME_PREFIX + i,
+                new double[] {50.3, 1, 100, 0});
+        metric =
+                new MetricValues(metricsContext, i, Collections.singleton(distributionMetricValue));
+        break;
     }
 
     recordWriter.encode(metric, encoder);

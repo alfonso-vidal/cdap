@@ -1874,6 +1874,11 @@ public abstract class TableTest<T extends Table> {
         public void gauge(String metricName, long value) {
           metrics.put(metricName, value);
         }
+
+        @Override
+        public void distribution(String metricName, double value) {
+          // TODO
+        }
       });
 
       // Note that we don't need to finish tx for metrics to be reported

@@ -167,6 +167,11 @@ public class ConcurrentMessageWriterTest {
       public void gauge(String metricName, long value) {
         LOG.info("MetricsContext.gauge: {} = {}", metricName, value);
       }
+
+      @Override
+      public void distribution(String metricName, double value) {
+        LOG.info("MetricsContext.distribution: {} = {}", metricName, value);
+      }
     });
 
     ExecutorService executor = Executors.newFixedThreadPool(3);

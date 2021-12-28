@@ -52,6 +52,11 @@ public class NoOpMetricsCollectionService extends AbstractIdleService implements
       }
 
       @Override
+      public void distribution(String metricName, double value) {
+
+      }
+
+      @Override
       public MetricsContext childContext(Map<String, String> tags) {
         return this;
       }

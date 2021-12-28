@@ -125,7 +125,7 @@ public class MetricsReporterHook extends AbstractHandlerHook {
           metricName = String.format("response.latency.%s.%s", serviceName, handlerInfo.getMethodName());
           metricNameCache.put(handlerInfo.getMethodName(), metricName);
         }
-        collector.gauge(metricName, responseTimeMs);
+        collector.distribution(metricName, responseTimeMs);
       }
 
     } catch (Throwable e) {
