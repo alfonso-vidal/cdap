@@ -263,6 +263,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
     RunRecordDetail recordedRunRecord;
     switch (programRunStatus) {
       case STARTING:
+        programLifecycleService.getRunRecordCounter().removeRequest(programRunId);
         String systemArgumentsString = properties.get(ProgramOptionConstants.SYSTEM_OVERRIDES);
         Map<String, String> systemArguments = systemArgumentsString == null ?
           Collections.emptyMap() : GSON.fromJson(systemArgumentsString, STRING_STRING_MAP);
@@ -319,6 +320,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
         recordedRunRecord = handleProgramCompletion(appMetadataStore, programHeartbeatTable,
                                                     programRunId, programRunStatus, notification,
                                                     messageIdBytes, runnables);
+        programLifecycleService.getRunRecordCounter().removeRequest(programRunId);
         break;
       case REJECTED:
         ProgramOptions programOptions = ProgramOptions.fromNotification(notification, GSON);
@@ -332,6 +334,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
                               programHeartbeatTable);
         getEmitMetricsRunnable(programRunId, recordedRunRecord,
                                Constants.Metrics.Program.PROGRAM_REJECTED_RUNS).ifPresent(runnables::add);
+        programLifecycleService.getRunRecordCounter().removeRequest(programRunId);
         break;
       default:
         // This should not happen
