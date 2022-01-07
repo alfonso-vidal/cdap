@@ -850,6 +850,7 @@ public final class Constants {
       public static final String PROVISIONER = "prv";
       public static final String SPARK = "sp";
       public static final String STATUS = "st";
+      public static final String CLUSTER_STATUS = "clst";
 
       // who emitted: user vs system (scope is historical name)
       public static final String SCOPE = "scp";
@@ -869,6 +870,8 @@ public final class Constants {
       public static final String PROGRAM = "prg";
       public static final String PROGRAM_TYPE = "prt";
       public static final String PROGRAM_ENTITY = "ent";
+      public static final String EXISTING_STATUS = "exst";
+      public static final String PLUGIN_COUNT = "plcnt";
 
       //For task worker
       public static final String CLASS = "clz";

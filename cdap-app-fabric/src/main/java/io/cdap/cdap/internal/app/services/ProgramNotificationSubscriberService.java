@@ -16,6 +16,7 @@
 
 package io.cdap.cdap.internal.app.services;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -44,6 +45,7 @@ import io.cdap.cdap.internal.app.runtime.ProgramRunners;
 import io.cdap.cdap.internal.app.runtime.SimpleProgramOptions;
 import io.cdap.cdap.internal.app.runtime.SystemArguments;
 import io.cdap.cdap.internal.app.store.AppMetadataStore;
+import io.cdap.cdap.internal.app.store.ApplicationMeta;
 import io.cdap.cdap.internal.app.store.RunRecordDetail;
 import io.cdap.cdap.internal.provision.ProvisionRequest;
 import io.cdap.cdap.internal.provision.ProvisionerNotifier;
@@ -324,14 +326,17 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
         ProgramOptions programOptions = ProgramOptions.fromNotification(notification, GSON);
         ProgramDescriptor programDescriptor =
           GSON.fromJson(properties.get(ProgramOptionConstants.PROGRAM_DESCRIPTOR), ProgramDescriptor.class);
+        ProgramRunStatus existingStatus = getProgramRunStatusFromRunRecord(appMetadataStore.getRun(programRunId));
+        int pluginCnt = getPluginCountFromAppMeta(
+          appMetadataStore.getApplication(programRunId.getParent().getParent()));
         recordedRunRecord = appMetadataStore.recordProgramRejected(
           programRunId, programOptions.getUserArguments().asMap(),
           programOptions.getArguments().asMap(), messageIdBytes, programDescriptor.getArtifactId().toApiArtifactId());
         writeToHeartBeatTable(recordedRunRecord,
                               RunIds.getTime(programRunId.getRun(), TimeUnit.SECONDS),
                               programHeartbeatTable);
-        getEmitMetricsRunnable(programRunId, recordedRunRecord,
-                               Constants.Metrics.Program.PROGRAM_REJECTED_RUNS).ifPresent(runnables::add);
+        getEmitMetricsRunnable(programRunId, recordedRunRecord, Constants.Metrics.Program.PROGRAM_REJECTED_RUNS,
+                               existingStatus, pluginCnt).ifPresent(runnables::add);
         break;
       default:
         // This should not happen
@@ -404,13 +409,14 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
                             programRunStatus, notification, sourceId, runnables);
     }
 
+    ProgramRunStatus existingStatus = getProgramRunStatusFromRunRecord(appMetadataStore.getRun(programRunId));
+    int pluginCnt = getPluginCountFromAppMeta(appMetadataStore.getApplication(programRunId.getParent().getParent()));
     RunRecordDetail recordedRunRecord = appMetadataStore.recordProgramStop(programRunId, endTimeSecs, programRunStatus,
                                                                            failureCause, sourceId);
     if (recordedRunRecord != null) {
       writeToHeartBeatTable(recordedRunRecord, endTimeSecs, programHeartbeatTable);
-
-      getEmitMetricsRunnable(programRunId, recordedRunRecord,
-                             STATUS_METRICS_NAME.get(programRunStatus)).ifPresent(runnables::add);
+      getEmitMetricsRunnable(programRunId, recordedRunRecord, STATUS_METRICS_NAME.get(programRunStatus),
+                             existingStatus, pluginCnt).ifPresent(runnables::add);
 
       // emit program run time metric.
       long runTime = endTimeSecs - RunIds.getTime(programRunId.getRun(), TimeUnit.SECONDS);
@@ -588,14 +594,16 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
   }
 
   private Optional<Runnable> getEmitMetricsRunnable(ProgramRunId programRunId,
-                                                    @Nullable RunRecordDetail recordedRunRecord,
-                                                    String metricName) {
+                                                    @Nullable RunRecordDetail recordedRunRecord, String metricName,
+                                                    @Nullable ProgramRunStatus existingStatus, int pluginCnt) {
     if (recordedRunRecord == null) {
       return Optional.empty();
     }
     Optional<ProfileId> profile = SystemArguments.getProfileIdFromArgs(programRunId.getNamespaceId(),
                                                                        recordedRunRecord.getSystemArgs());
-    return profile.map(profileId -> () -> emitProfileMetrics(programRunId, profileId, metricName));
+    Map<String, String> additionalTags = getAdditionalTagsForProgramMetrics(recordedRunRecord,
+                                                                            existingStatus, pluginCnt);
+    return profile.map(profileId -> () -> emitProfileMetrics(programRunId, profileId, metricName, additionalTags));
   }
 
   private void publishRecordedStatus(Notification notification,
@@ -644,7 +652,8 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
    * Emit the metrics context for the program, the tags are constructed with the program run id and
    * the profile id
    */
-  private void emitProfileMetrics(ProgramRunId programRunId, ProfileId profileId, String metricName) {
+  private void emitProfileMetrics(ProgramRunId programRunId, ProfileId profileId, String metricName,
+                                  Map<String, String> additionalTags) {
     Map<String, String> tags = ImmutableMap.<String, String>builder()
       .put(Constants.Metrics.Tag.PROFILE_SCOPE, profileId.getScope().name())
       .put(Constants.Metrics.Tag.PROFILE, profileId.getProfile())
@@ -653,6 +662,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
       .put(Constants.Metrics.Tag.APP, programRunId.getApplication())
       .put(Constants.Metrics.Tag.PROGRAM, programRunId.getProgram())
       .put(Constants.Metrics.Tag.RUN_ID, programRunId.getRun())
+      .putAll(additionalTags)
       .build();
 
     metricsCollectionService.getContext(tags).increment(metricName, 1L);
@@ -696,5 +706,35 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
    */
   private AppMetadataStore getAppMetadataStore(StructuredTableContext context) {
     return AppMetadataStore.create(context);
+  }
+
+  @Nullable
+  private ProgramRunStatus getProgramRunStatusFromRunRecord(RunRecordDetail record) {
+    if (record == null) {
+      return null;
+    }
+    return record.getStatus();
+  }
+
+  private Integer getPluginCountFromAppMeta(ApplicationMeta applicationMeta) {
+    if (applicationMeta == null) {
+      return 0;
+    }
+    return applicationMeta.getSpec().getPlugins().size();
+  }
+
+  private Map<String, String> getAdditionalTagsForProgramMetrics(RunRecordDetail runRecord,
+                                                                 @Nullable ProgramRunStatus existingStatus,
+                                                                 int pluginCnt) {
+    Map<String, String> additionalTags = new HashMap<>();
+    additionalTags.computeIfAbsent(Constants.Metrics.Tag.PROVISIONER,
+                                   provisioner -> SystemArguments.getProfileProvisioner(runRecord.getSystemArgs()));
+    additionalTags.computeIfAbsent(Constants.Metrics.Tag.CLUSTER_STATUS,
+                                   clusterStatus -> runRecord.getCluster().getStatus().name());
+    additionalTags.computeIfAbsent(Constants.Metrics.Tag.EXISTING_STATUS,
+                                   existingProgramStatus -> existingStatus == null ? null : existingStatus.name());
+    additionalTags.put(Constants.Metrics.Tag.PLUGIN_COUNT, String.valueOf(pluginCnt));
+
+    return additionalTags;
   }
 }
