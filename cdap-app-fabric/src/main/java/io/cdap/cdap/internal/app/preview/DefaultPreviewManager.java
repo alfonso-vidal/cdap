@@ -215,6 +215,11 @@ public class DefaultPreviewManager extends AbstractIdleService implements Previe
       throw new IllegalStateException("Preview service is not running. Cannot start preview for " + programId);
     }
 
+    Map<String, Double> config = (Map<String, Double>) previewRequest.getAppRequest().getConfig();
+    Double numOfRecords = config.get("numOfRecordsPreview");
+    if (numOfRecords >= Double.parseDouble(previewCConf.get(Constants.Preview.MAX_NUM_OF_RECORDS))) {
+      throw new BadRequestException("Preview record limit exceeded");
+    }
     previewRequestQueue.add(previewRequest);
     return previewApp;
   }
