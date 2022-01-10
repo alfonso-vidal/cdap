@@ -65,7 +65,7 @@ import javax.annotation.Nullable;
  */
 public class PostgreSqlStructuredTable implements StructuredTable {
   private static final Logger LOG = LoggerFactory.getLogger(PostgreSqlStructuredTable.class);
-  private static final String SCAN_FETCH_SIZE = "data.storage.sql.scan.size.rows";
+  private static final String SCAN_FETCH_SIZE_ROWS = "data.storage.sql.scan.size.rows";
   private static final Injector injector = Guice.createInjector(new ConfigModule());
 
   private final Connection connection;
@@ -215,7 +215,7 @@ public class PostgreSqlStructuredTable implements StructuredTable {
     // We don't close the statement here because once it is closed, the result set is also closed.
     try {
       PreparedStatement statement = connection.prepareStatement(scanQuery);
-      statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE));
+      statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE_ROWS));
       setStatementFieldByRange(keyRange, statement);
       LOG.trace("SQL statement: {}", statement);
 
@@ -315,7 +315,7 @@ public class PostgreSqlStructuredTable implements StructuredTable {
     query.append(" LIMIT ").append(limit).append(";");
 
     PreparedStatement statement = connection.prepareStatement(query.toString());
-    statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE));
+    statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE_ROWS));
 
     // Set the parameters
     int index = setFields(statement, keyFields.values().stream().flatMap(Collection::stream)::iterator, 1);
@@ -337,7 +337,7 @@ public class PostgreSqlStructuredTable implements StructuredTable {
     // We don't close the statement here because once it is closed, the result set is also closed.
     try {
       PreparedStatement statement = connection.prepareStatement(sql);
-      statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE));
+      statement.setFetchSize(cConf.getInt(SCAN_FETCH_SIZE_ROWS));
       setField(statement, index, 1);
       LOG.trace("SQL statement: {}", statement);
       ResultSet resultSet = statement.executeQuery();

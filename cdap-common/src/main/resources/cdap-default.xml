@@ -897,7 +897,7 @@
     <name>data.storage.sql.scan.size.rows</name>
     <value>100</value>
     <description>
-      The fetch size for database reads from Postgres sql.
+      The number of rows fetched for database reads from Postgres sql.
     </description>
   </property>
 
