@@ -727,6 +727,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
                                                                  @Nullable ProgramRunStatus existingStatus,
                                                                  int pluginCnt) {
     Map<String, String> additionalTags = new HashMap<>();
+    // don't want to add the tag if it is not present otherwise it will result in NPE
     additionalTags.computeIfAbsent(Constants.Metrics.Tag.PROVISIONER,
                                    provisioner -> SystemArguments.getProfileProvisioner(runRecord.getSystemArgs()));
     additionalTags.computeIfAbsent(Constants.Metrics.Tag.CLUSTER_STATUS,
