@@ -70,6 +70,7 @@ public class TetheringConf {
   /**
    * Create the conf without performing validation.
    */
+  @VisibleForTesting
   public static TetheringConf create(String tetheredInstanceName, String tetheredNamespace) {
     return new TetheringConf(tetheredInstanceName, tetheredNamespace);
   }
