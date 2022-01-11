@@ -25,6 +25,7 @@ import io.cdap.cdap.api.spark.sql.DataFrames;
 import io.cdap.cdap.etl.api.StageMetrics;
 import io.cdap.cdap.etl.api.engine.sql.SQLEngine;
 import io.cdap.cdap.etl.api.engine.sql.SQLEngineException;
+import io.cdap.cdap.etl.api.engine.sql.SQLEngineOutput;
 import io.cdap.cdap.etl.api.engine.sql.capability.PullCapability;
 import io.cdap.cdap.etl.api.engine.sql.capability.PushCapability;
 import io.cdap.cdap.etl.api.engine.sql.dataset.RecordCollection;
@@ -40,6 +41,7 @@ import io.cdap.cdap.etl.api.engine.sql.request.SQLPushRequest;
 import io.cdap.cdap.etl.api.engine.sql.request.SQLRelationDefinition;
 import io.cdap.cdap.etl.api.engine.sql.request.SQLTransformDefinition;
 import io.cdap.cdap.etl.api.engine.sql.request.SQLTransformRequest;
+import io.cdap.cdap.etl.api.engine.sql.request.SQLWriteRequest;
 import io.cdap.cdap.etl.api.join.JoinDefinition;
 import io.cdap.cdap.etl.api.join.JoinStage;
 import io.cdap.cdap.etl.api.relational.Engine;
@@ -670,5 +672,27 @@ public class BatchSQLEngineAdapter implements Closeable {
         inputDatasets, stageSpec.getName(), pluginContext.getOutputRelation(), stageSpec.getOutputSchema());
       return sqlEngine.transform(sqlContext);
     }));
+  }
+
+  /**
+   * Try to write the output directly to the SQLEngineOutput registered by this engine.
+   * @param datasetName dataset to write
+   * @param sqlEngineOutput output instance created by this engine
+   * @return boolean specifying if the output was written or not.
+   */
+  public boolean write(String datasetName, SQLEngineOutput sqlEngineOutput) {
+    SQLEngineJobKey execJobKey = new SQLEngineJobKey(datasetName, SQLEngineJobType.EXECUTE);
+
+    if (jobs.containsKey(execJobKey)) {
+      LOG.debug("Waiting for dataset {} to be ready", datasetName);
+      jobs.get(execJobKey).waitFor();
+      LOG.debug("Attempting write for dataset {} into {}", datasetName, sqlEngineOutput);
+      boolean wrote = sqlEngine.write(new SQLWriteRequest(datasetName, sqlEngineOutput));
+      LOG.debug("Write dataset {} into {} was {}", datasetName, sqlEngineOutput, wrote ? "completed" : "refused");
+      return wrote;
+    } else {
+      LOG.warn("Could not find join result job for {}, skipping direct write", datasetName);
+      return false;
+    }
   }
 }
