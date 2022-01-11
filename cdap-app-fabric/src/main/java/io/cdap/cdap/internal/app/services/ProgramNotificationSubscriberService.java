@@ -716,7 +716,7 @@ public class ProgramNotificationSubscriberService extends AbstractNotificationSu
     return record.getStatus();
   }
 
-  private Integer getPluginCountFromAppMeta(ApplicationMeta applicationMeta) {
+  private int getPluginCountFromAppMeta(@Nullable ApplicationMeta applicationMeta) {
     if (applicationMeta == null) {
       return 0;
     }
