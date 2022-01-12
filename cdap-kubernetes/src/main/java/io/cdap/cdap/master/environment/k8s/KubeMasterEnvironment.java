@@ -29,6 +29,7 @@ import io.cdap.cdap.master.spi.environment.MasterEnvironmentTask;
 import io.cdap.cdap.master.spi.environment.spark.SparkConfig;
 import io.cdap.cdap.master.spi.environment.spark.SparkLocalizeResource;
 import io.cdap.cdap.master.spi.environment.spark.SparkSubmitContext;
+import io.cdap.cdap.proto.id.NamespaceId;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
@@ -133,7 +134,9 @@ public class KubeMasterEnvironment implements MasterEnvironment {
   private static final String NAMESPACE_CREATION_ENABLED = "master.environment.k8s.namespace.creation.enabled";
   private static final String CDAP_NAMESPACE_LABEL = "cdap.namespace";
   private static final String RESOURCE_QUOTA_NAME = "cdap-resource-quota";
-  private static final Set<String> BOOTSTRAP_CDAP_NAMESPACES = ImmutableSet.of("default", "system", "cdap");
+  private static final Set<NamespaceId> BOOTSTRAP_CDAP_NAMESPACES = ImmutableSet.of(NamespaceId.DEFAULT,
+                                                                                    NamespaceId.SYSTEM,
+                                                                                    NamespaceId.CDAP);
 
   private static final String DEFAULT_NAMESPACE = "default";
   private static final String DEFAULT_INSTANCE_LABEL = "cdap.instance";
@@ -299,7 +302,8 @@ public class KubeMasterEnvironment implements MasterEnvironment {
   @Override
   public void onNamespaceCreation(String cdapNamespace, Map<String, String> properties) throws Exception {
     // check if namespace creation is enabled from master config or if cdapNamespace is a bootstrap namespace
-    if (!namespaceCreationEnabled || BOOTSTRAP_CDAP_NAMESPACES.contains(cdapNamespace)) {
+    if (!namespaceCreationEnabled ||
+      BOOTSTRAP_CDAP_NAMESPACES.stream().anyMatch(ns -> ns.getNamespace().equals(cdapNamespace))) {
       return;
     }
     String namespace = properties.get(NAMESPACE_PROPERTY);
