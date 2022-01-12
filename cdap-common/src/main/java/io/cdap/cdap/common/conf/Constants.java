@@ -131,6 +131,7 @@ public final class Constants {
     public static final String AUTHENTICATION = "authentication";
     public static final String TASK_WORKER = "task.worker";
     public static final String ARTIFACT_LOCALIZER = "artifact.localizer";
+    public static final String SYSTEM_METRICS_EXPORTER = "system.metrics.exporter";
 
     public static final String SERVICE_INSTANCE_TABLE_NAME = "cdap.services.instances";
     /** Scheduler queue name to submit the master service app. */
@@ -931,6 +932,16 @@ public final class Constants {
       public static final String APPLICATION_COUNT = "application.count";
       public static final String NAMESPACE_COUNT = "namespace.count";
       public static final String APPLICATION_PLUGIN_COUNT = "application.plugin.count";
+    }
+
+    /**
+     * JVM resource metrics
+     */
+    public static final class JVMResource {
+      public static final String HEAP_USED_MB = "jvm.resource.heap.used.mb";
+      public static final String HEAP_MAX_MB = "jvm.resource.heap.max.mb";
+      public static final String SYSTEM_LOAD_PER_PROCESSOR_SCALED = "jvm.resource.system.load.per.processor.scaled";
+      public static final String THREAD_COUNT = "jvm.resource.thread.count";
     }
 
     /**
@@ -1806,6 +1817,21 @@ public final class Constants {
     public static final String MAX_RETRY_TIMES = "support.bundle.max.retry.times";
     public static final String MAX_THREAD_TIMEOUT = "support.bundle.max.thread.timeout";
     public static final String SYSTEM_LOG_START_TIME = "support.bundle.system.log.start.time";
+  }
+
+  public static final class JMXMetricsCollector {
+    public static final String POLL_INTERVAL_MILLIS = "jmx.metrics.collector.poll.interval.millis";
+    public static final String SERVER_PORT = "jmx.metrics.collector.server.port";
+  }
+
+  public static final class BufferedMetricsPublisher {
+    public static final String PERSISTING_FREQUENCY_SECONDS = "buffered.metrics.publisher.persisting.frequency.seconds";
+    public static final String BUFFER_CAPACITY = "buffered.metrics.publisher.buffer.capacity";
+  }
+
+  public static final class KubeMasterEnvironment {
+    public static final String PROPERTY_POD_NAME = "kube.master.environment.property.pod.name";
+    public static final String PROPERTY_INSTANCE_NAME = "kube.master.environment.property.instance.name";
   }
 
   public static final class Tethering {

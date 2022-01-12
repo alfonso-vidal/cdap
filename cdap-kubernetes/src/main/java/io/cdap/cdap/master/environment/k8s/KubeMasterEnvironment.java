@@ -19,6 +19,7 @@ package io.cdap.cdap.master.environment.k8s;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
+import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.k8s.discovery.KubeDiscoveryService;
 import io.cdap.cdap.k8s.runtime.KubeTwillRunnerService;
 import io.cdap.cdap.master.spi.environment.MasterEnvironment;
@@ -158,6 +159,7 @@ public class KubeMasterEnvironment implements MasterEnvironment {
   private String configMapName;
   private CoreV1Api coreV1Api;
   private boolean namespaceCreationEnabled;
+  private String instanceLabel;
 
   @Override
   public void initialize(MasterEnvironmentContext context) throws IOException, ApiException {
@@ -185,7 +187,7 @@ public class KubeMasterEnvironment implements MasterEnvironment {
     coreV1Api = new CoreV1Api(Config.defaultClient());
 
     // Get the instance label to setup prefix for K8s services
-    String instanceLabel = conf.getOrDefault(INSTANCE_LABEL, DEFAULT_INSTANCE_LABEL);
+    instanceLabel = conf.getOrDefault(INSTANCE_LABEL, DEFAULT_INSTANCE_LABEL);
     String instanceName = podLabels.get(instanceLabel);
     if (instanceName == null) {
       throw new IllegalStateException("Missing instance label '" + instanceLabel + "' from pod labels.");
@@ -315,6 +317,19 @@ public class KubeMasterEnvironment implements MasterEnvironment {
     String namespace = properties.get(NAMESPACE_PROPERTY);
     if (namespaceCreationEnabled && namespace != null && !namespace.isEmpty()) {
       deleteKubeNamespace(namespace, cdapNamespace);
+    }
+  }
+
+  @Override
+  public String getProperty(String propertyName) {
+    switch (propertyName) {
+      case Constants.KubeMasterEnvironment.PROPERTY_POD_NAME:
+        return this.podInfo.getName();
+      case Constants.KubeMasterEnvironment.PROPERTY_INSTANCE_NAME:
+        return this.podInfo.getLabels().get(instanceLabel);
+      default:
+        throw new UnsupportedOperationException(
+          String.format("Code to get property %s not implemented", propertyName));
     }
   }
 

@@ -95,6 +95,11 @@
     </dependency>
     <dependency>
       <groupId>io.cdap.cdap</groupId>
+      <artifactId>cdap-system-metrics</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.cdap.cdap</groupId>
       <artifactId>cdap-security</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -743,7 +748,7 @@
                         <exclude name="${additional.artifacts.exclude.pattern}"/>
                         <exclude name="**/target/*-sources.jar"/>
                         <exclude name="**/target/*-javadoc.jar"/>
-                        <!-- Wrangler excludes --> 
+                        <!-- Wrangler excludes -->
                         <exclude name="**/target/wrangler-core*"/>
                         <exclude name="**/target/wrangler-test*"/>
                         <!--We don't want to package the following plugins with CDAP-->
