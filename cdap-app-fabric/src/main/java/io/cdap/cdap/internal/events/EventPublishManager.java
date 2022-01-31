@@ -44,7 +44,7 @@ public class EventPublishManager extends AbstractIdleService {
 
     @Override
     protected void startUp() throws Exception {
-        System.out.println("Startig manager... " + publishEnabled);
+        System.out.println("Starting manager... " + publishEnabled);
         if (!publishEnabled) {
             return; // If publish is not enabled not to start
         }

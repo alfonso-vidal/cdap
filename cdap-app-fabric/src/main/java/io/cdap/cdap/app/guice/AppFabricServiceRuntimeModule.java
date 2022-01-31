@@ -375,8 +375,7 @@ public final class AppFabricServiceRuntimeModule extends RuntimeModule {
       //TODO - inject EventWriterProvider
 
       // To test create a dummy Provider not to provide the writer one
-      bind(EventWriterProvider.class).to(DummyEventWriterExtensionProvider.class);
-      bind(EventWriter.class).to(DummyEventWriter.class);
+      bind(EventWriterProvider.class).to(EventWriterExtensionProvider.class);
 
       Multibinder<HttpHandler> handlerBinder = Multibinder.newSetBinder(
         binder(), HttpHandler.class, Names.named(Constants.AppFabric.HANDLERS_BINDING));

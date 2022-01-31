@@ -1764,6 +1764,16 @@ public final class Constants {
     public static final String EVENTS_WRITER_EXTENSIONS_DIR = "events.writer.extensions.dir";
 
     public static final String PROGRAM_STATUS_RECORD_EVENT_TOPIC = "program.status.record.event.topic";
+
+    public static final String EVENTS_WRITER_PUBSUB_PROJECT = "events.writer.pub_sub.project";
+
+    public static final String EVENTS_WRITER_PUBSUB_SA_PATH = "events.writer.pub_sub.service_account_path";
+
+    public static final String EVENTS_WRITER_PUBSUB_TOPIC = "events.writer.pub_sub.topic";
+
+    public static final String EVENTS_WRITER_PUBSUB_PROXY_HOST = "events.writer.pub_sub.proxy_host";
+
+    public static final String EVENTS_WRITER_PUBSUB_PROXY_PORT = "events.writer.pub_sub.proxy_port";
   }
 
   /**
