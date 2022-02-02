@@ -30,6 +30,7 @@ import io.cdap.cdap.internal.app.store.AppMetadataStore;
 import io.cdap.cdap.messaging.MessagingService;
 import io.cdap.cdap.proto.Notification;
 import io.cdap.cdap.proto.ProgramRunStatus;
+import io.cdap.cdap.proto.id.NamespaceId;
 import io.cdap.cdap.proto.id.ProgramRunId;
 import io.cdap.cdap.spi.data.StructuredTableContext;
 import io.cdap.cdap.spi.data.transaction.TransactionRunner;
@@ -38,6 +39,7 @@ import io.cdap.cdap.spi.events.EventWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +52,13 @@ import javax.annotation.Nullable;
 public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberService
   implements EventPublisher<ProgramStatusEvent> {
 
+  private static final String PIPELINE_PROGRAM_NAME = "DataPipelineWorkflow";
   private static final String SUBSCRIBER_NAME = "program_status_event_publisher";
   private static final Gson GSON = new Gson();
   private static final String EVENT_VERSION = "v1";
 
   private Collection<EventWriter<ProgramStatusEvent>> eventWriters;
+  private Map<String, Collection<PluginMetrics>> runMetrics;
   private String instanceName;
   private String projectName;
   private CConfiguration cConf;
@@ -73,6 +77,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     this.cConf = cConf;
     this.instanceName = cConf.get(Constants.Event.INSTANCE_NAME);
     this.projectName = cConf.get(Constants.Event.PROJECT_NAME);
+    this.runMetrics = Collections.emptyMap();
   }
 
   @Override
@@ -114,12 +119,10 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
   @Override
   protected void processMessages(StructuredTableContext structuredTableContext,
                                  Iterator<ImmutablePair<String, Notification>> messages) {
-    System.out.println("I am processing messages!!");
     List<ProgramStatusEvent> programStatusEvents = new ArrayList<>();
     long publishTime = System.currentTimeMillis();
     messages.forEachRemaining(message -> {
       Notification notification = message.getSecond();
-      System.out.println("Notification type of the message: " + notification.getNotificationType().name());
       if (!notification.getNotificationType().equals(Notification.Type.PROGRAM_STATUS)) {
         return;
       }
@@ -130,14 +133,13 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
         return;
       }
       ProgramRunStatus programRunStatus = ProgramRunStatus.valueOf(programStatus);
-      System.out.println("Status of the event: " + programRunStatus.name());
-      //Should event publish happen for this status
-      if (!shouldPublish(programRunStatus)) {
-        return;
-      }
       String programRun = properties.get(ProgramOptionConstants.PROGRAM_RUN_ID);
       ProgramRunId programRunId = GSON.fromJson(programRun, ProgramRunId.class);
-      System.out.println("Retrieving event: " + programRunId.getRun());
+
+      //Should event publish happen for this status
+      if (!shouldPublish(programRunStatus, programRunId)) {
+        return;
+      }
       ProgramStatusEventDetails.Builder builder = ProgramStatusEventDetails
         .getBuilder(programRunId.getRun(), programRunId.getProgram(), programRunId.getNamespace(), programStatus,
                     RunIds.getTime(programRunId.getRun(), TimeUnit.MILLISECONDS));
@@ -145,9 +147,13 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
       String sysArgsString = properties.get(ProgramOptionConstants.SYSTEM_OVERRIDES);
       Type argsMapType = new TypeToken<Map<String, String>>() {
       }.getType();
-      ProgramStatusEventDetails programStatusEventDetails = builder
+      builder = builder
         .withUserArgs(GSON.fromJson(userArgsString, argsMapType))
-        .withSystemArgs(GSON.fromJson(sysArgsString, argsMapType)).build();
+        .withSystemArgs(GSON.fromJson(sysArgsString, argsMapType));
+      if (programRunStatus.isEndState()) {
+        builder = populatePluginMetrics(builder, properties, programRunStatus);
+      }
+      ProgramStatusEventDetails programStatusEventDetails = builder.build();
       ProgramStatusEvent programStatusEvent = new ProgramStatusEvent(publishTime, EVENT_VERSION, instanceName,
                                                                      projectName, programStatusEventDetails);
       programStatusEvents.add(programStatusEvent);
@@ -156,7 +162,23 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     this.eventWriters.stream().forEach(eventWriter -> eventWriter.write(programStatusEvents));
   }
 
-  private boolean shouldPublish(ProgramRunStatus programRunStatus) {
-    return programRunStatus == ProgramRunStatus.STARTING;
+  private boolean shouldPublish(ProgramRunStatus programRunStatus, ProgramRunId programRunId) {
+    return PIPELINE_PROGRAM_NAME.equals(programRunId.getProgram())
+            && !NamespaceId.SYSTEM.equals(programRunId.getNamespaceId())
+            && (programRunStatus == ProgramRunStatus.STARTING || programRunStatus.isEndState());
+  }
+
+  private ProgramStatusEventDetails.Builder populatePluginMetrics(
+          ProgramStatusEventDetails.Builder builder, Map<String, String> properties, ProgramRunStatus status) {
+    if (status == ProgramRunStatus.KILLED) {
+      return builder;
+    }
+    if (properties.containsKey(ProgramOptionConstants.PROGRAM_ERROR)) {
+      builder = builder.withError(properties.get(ProgramOptionConstants.PROGRAM_ERROR));
+    }
+    //if (properties.containsKey())
+    //TODO Find out the JSON format of the completed executions in order to
+    // retrieve the metrics form the succeeded executions
+    return builder;
   }
 }
