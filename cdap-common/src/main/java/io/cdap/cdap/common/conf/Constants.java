@@ -1765,15 +1765,15 @@ public final class Constants {
 
     public static final String PROGRAM_STATUS_RECORD_EVENT_TOPIC = "program.status.record.event.topic";
 
-    public static final String EVENTS_WRITER_PUBSUB_PROJECT = "events.writer.pub_sub.project";
+    public static final String EVENTS_WRITER_PUBSUB_PROJECT = "event.writer.pub_sub_event_writer.project";
 
-    public static final String EVENTS_WRITER_PUBSUB_SA_PATH = "events.writer.pub_sub.service_account_path";
+    public static final String EVENTS_WRITER_PUBSUB_SA_PATH = "event.writer.pub_sub_event_writer.service_account_path";
 
-    public static final String EVENTS_WRITER_PUBSUB_TOPIC = "events.writer.pub_sub.topic";
+    public static final String EVENTS_WRITER_PUBSUB_TOPIC = "event.writer.pub_sub_event_writer.topic";
 
-    public static final String EVENTS_WRITER_PUBSUB_PROXY_HOST = "events.writer.pub_sub.proxy_host";
+    public static final String EVENTS_WRITER_PUBSUB_PROXY_HOST = "event.writer.pub_sub_event_writer.proxy_host";
 
-    public static final String EVENTS_WRITER_PUBSUB_PROXY_PORT = "events.writer.pub_sub.proxy_port";
+    public static final String EVENTS_WRITER_PUBSUB_PROXY_PORT = "event.writer.pub_sub_event_writer.proxy_port";
   }
 
   /**

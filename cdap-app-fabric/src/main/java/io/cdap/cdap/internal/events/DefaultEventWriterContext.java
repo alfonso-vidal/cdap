@@ -25,7 +25,7 @@ public class DefaultEventWriterContext implements EventWriterContext {
     private final Map<String, String> properties;
 
     DefaultEventWriterContext(CConfiguration cConf, String eventsWriterId) {
-        String prefix = String.format("%s%s.", Constants.Event.EVENTS_WRITER_PREFIX, eventsWriterId);
+        String prefix = String.format("%s.%s.", Constants.Event.EVENTS_WRITER_PREFIX, eventsWriterId);
         this.properties = Collections.unmodifiableMap(cConf.getPropsWithPrefix(prefix));
     }
 
