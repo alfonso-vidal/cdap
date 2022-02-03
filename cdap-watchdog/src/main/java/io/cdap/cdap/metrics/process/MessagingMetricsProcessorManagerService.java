@@ -29,6 +29,7 @@ import io.cdap.cdap.internal.io.DatumReaderFactory;
 import io.cdap.cdap.internal.io.SchemaGenerator;
 import io.cdap.cdap.messaging.MessagingService;
 import io.cdap.cdap.metrics.process.loader.MetricsWriterProvider;
+import io.cdap.cdap.metrics.process.loader.dummy.DummyMetricsWriter;
 import io.cdap.cdap.metrics.store.MetricDatasetFactory;
 
 import java.util.ArrayList;
@@ -107,7 +108,11 @@ public class MessagingMetricsProcessorManagerService extends AbstractIdleService
     metricsWriter.initialize(context);
     this.metricsWriters.add(metricsWriter);
 
-    for (Map.Entry<String, MetricsWriter> metricsWriterEntry : metricsWriterProvider.loadMetricsWriters().entrySet()) {
+    //TODO REVERT THIS AFTER TEST IT
+    Map<String, MetricsWriter> writers = metricsWriterProvider.loadMetricsWriters();
+    writers.put("DummyMetricsWriter", new DummyMetricsWriter());
+
+    for (Map.Entry<String, MetricsWriter> metricsWriterEntry : writers.entrySet()) {
       MetricsWriter writer = metricsWriterEntry.getValue();
       this.metricsWriters.add(writer);
       DefaultMetricsWriterContext metricsWriterContext = new DefaultMetricsWriterContext(metricsContext,
