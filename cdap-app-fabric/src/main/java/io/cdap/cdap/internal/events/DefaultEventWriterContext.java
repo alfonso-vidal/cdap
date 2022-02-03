@@ -12,7 +12,6 @@
 
 package io.cdap.cdap.internal.events;
 
-import io.cdap.cdap.api.metrics.MetricsContext;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.spi.events.EventWriterContext;
@@ -20,6 +19,10 @@ import io.cdap.cdap.spi.events.EventWriterContext;
 import java.util.Collections;
 import java.util.Map;
 
+
+/**
+ * Provides an initialized default context for EventWriter implementing {@link EventWriterContext}
+ * */
 public class DefaultEventWriterContext implements EventWriterContext {
 
     private final Map<String, String> properties;
