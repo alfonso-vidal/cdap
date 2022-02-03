@@ -69,10 +69,4 @@ public interface Event<T> {
    * @return event details
    */
   T getEventDetails();
-
-  /**
-   * To stringify the object and print by logger
-   * @return
-   */
-  String toString();
 }

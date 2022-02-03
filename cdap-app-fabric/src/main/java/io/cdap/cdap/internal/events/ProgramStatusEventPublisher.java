@@ -39,7 +39,6 @@ import io.cdap.cdap.spi.events.EventWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +57,6 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
   private static final String EVENT_VERSION = "v1";
 
   private Collection<EventWriter<ProgramStatusEvent>> eventWriters;
-  private Map<String, Collection<PluginMetrics>> runMetrics;
   private String instanceName;
   private String projectName;
   private CConfiguration cConf;
@@ -77,7 +75,6 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     this.cConf = cConf;
     this.instanceName = cConf.get(Constants.Event.INSTANCE_NAME);
     this.projectName = cConf.get(Constants.Event.PROJECT_NAME);
-    this.runMetrics = Collections.emptyMap();
   }
 
   @Override
@@ -85,7 +82,6 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     this.eventWriters = eventWriters;
     this.eventWriters.forEach(eventWriter -> {
       DefaultEventWriterContext eventWriterContext = new DefaultEventWriterContext(cConf, eventWriter.getID());
-      System.out.println("Initalizing EventWriter in Publisher...");
       eventWriter.initialize(eventWriterContext);
     });
   }
@@ -176,9 +172,6 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     if (properties.containsKey(ProgramOptionConstants.PROGRAM_ERROR)) {
       builder = builder.withError(properties.get(ProgramOptionConstants.PROGRAM_ERROR));
     }
-    //if (properties.containsKey())
-    //TODO Find out the JSON format of the completed executions in order to
-    // retrieve the metrics form the succeeded executions
     return builder;
   }
 }

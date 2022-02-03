@@ -41,7 +41,7 @@ public class EventWriterExtensionProvider extends AbstractExtensionLoader<String
                     EventWriter.class);
         } catch (IOException e) {
             throw new RuntimeException("Failed to trace dependencies for provisioner extension. " +
-                    "Usage of metrics writer might fail.", e);
+                    "Usage of events writer might fail.", e);
         }
     }
 
