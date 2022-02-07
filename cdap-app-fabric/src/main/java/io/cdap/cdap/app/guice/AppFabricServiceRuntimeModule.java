@@ -370,7 +370,6 @@ public final class AppFabricServiceRuntimeModule extends RuntimeModule {
       eventPublishersBinder.addBinding().to(ProgramStatusEventPublisher.class);
       bind(EventPublishManager.class).in(Scopes.SINGLETON);
 
-      // To test create a dummy Provider not to provide the writer one
       bind(EventWriterProvider.class).to(EventWriterExtensionProvider.class);
 
       Multibinder<HttpHandler> handlerBinder = Multibinder.newSetBinder(

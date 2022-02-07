@@ -24,15 +24,14 @@ import java.util.Collection;
 /**
  * Interface for an event publisher
  *
- * @param <E> Event handled by this publisher
  */
-public interface EventPublisher<E extends Event> {
+public interface EventPublisher {
 
   /**
    * Initialize this publisher
    * @param eventWriters {@link Collection} of {@link EventWriter}s to which events has to be published.
    */
-  void initialize(Collection<EventWriter<E>> eventWriters);
+  void initialize(Collection<EventWriter> eventWriters);
 
   /**
    * Start publish , to be called once init is complete

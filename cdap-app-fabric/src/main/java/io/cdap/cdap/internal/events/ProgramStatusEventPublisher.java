@@ -49,17 +49,17 @@ import javax.annotation.Nullable;
  * {@link EventPublisher} implementation for program status
  */
 public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberService
-  implements EventPublisher<ProgramStatusEvent> {
+  implements EventPublisher {
 
   private static final String PIPELINE_PROGRAM_NAME = "DataPipelineWorkflow";
   private static final String SUBSCRIBER_NAME = "program_status_event_publisher";
   private static final Gson GSON = new Gson();
   private static final String EVENT_VERSION = "v1";
 
-  private Collection<EventWriter<ProgramStatusEvent>> eventWriters;
-  private String instanceName;
-  private String projectName;
-  private CConfiguration cConf;
+  private Collection<EventWriter> eventWriters;
+  private final String instanceName;
+  private final String projectName;
+  private final CConfiguration cConf;
 
   @Inject
   protected ProgramStatusEventPublisher(String name, CConfiguration cConf,
@@ -78,7 +78,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
   }
 
   @Override
-  public void initialize(Collection<EventWriter<ProgramStatusEvent>> eventWriters) {
+  public void initialize(Collection<EventWriter> eventWriters) {
     this.eventWriters = eventWriters;
     this.eventWriters.forEach(eventWriter -> {
       DefaultEventWriterContext eventWriterContext = new DefaultEventWriterContext(cConf, eventWriter.getID());
@@ -147,7 +147,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
         .withUserArgs(GSON.fromJson(userArgsString, argsMapType))
         .withSystemArgs(GSON.fromJson(sysArgsString, argsMapType));
       if (programRunStatus.isEndState()) {
-        builder = populatePluginMetrics(builder, properties, programRunStatus);
+        builder = populateErrorDetails(builder, properties, programRunStatus);
       }
       ProgramStatusEventDetails programStatusEventDetails = builder.build();
       ProgramStatusEvent programStatusEvent = new ProgramStatusEvent(publishTime, EVENT_VERSION, instanceName,
@@ -155,7 +155,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
       programStatusEvents.add(programStatusEvent);
     });
 
-    this.eventWriters.stream().forEach(eventWriter -> eventWriter.write(programStatusEvents));
+    this.eventWriters.forEach(eventWriter -> eventWriter.write(programStatusEvents));
   }
 
   private boolean shouldPublish(ProgramRunStatus programRunStatus, ProgramRunId programRunId) {
@@ -164,7 +164,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
             && (programRunStatus == ProgramRunStatus.STARTING || programRunStatus.isEndState());
   }
 
-  private ProgramStatusEventDetails.Builder populatePluginMetrics(
+  private ProgramStatusEventDetails.Builder populateErrorDetails(
           ProgramStatusEventDetails.Builder builder, Map<String, String> properties, ProgramRunStatus status) {
     if (status == ProgramRunStatus.KILLED) {
       return builder;

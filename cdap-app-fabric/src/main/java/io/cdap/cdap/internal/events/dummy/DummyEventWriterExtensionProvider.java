@@ -17,11 +17,7 @@
 package io.cdap.cdap.internal.events.dummy;
 
 import com.google.inject.Inject;
-import io.cdap.cdap.common.conf.CConfiguration;
-import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.common.lang.ClassPathResources;
-import io.cdap.cdap.common.lang.FilterClassLoader;
-import io.cdap.cdap.extension.AbstractExtensionLoader;
 import io.cdap.cdap.internal.events.EventWriterProvider;
 import io.cdap.cdap.spi.events.EventWriter;
 
@@ -31,12 +27,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Dummy implementation for {@link EventWriterProvider} for test proposals.
+ */
 public class DummyEventWriterExtensionProvider implements EventWriterProvider {
 
     private static final Set<String> ALLOWED_RESOURCES = createAllowedResources();
 
     private final DummyEventWriter eventWriter;
 
+    /**
+     * Collects a set of the paths of the extensions classes.
+     */
     private static Set<String> createAllowedResources() {
         try {
             return ClassPathResources.getResourcesWithDependencies(EventWriter.class.getClassLoader(),
@@ -57,7 +59,6 @@ public class DummyEventWriterExtensionProvider implements EventWriterProvider {
     public Map<String, EventWriter> loadEventWriters() {
         Map<String, EventWriter> map = new HashMap<>();
         map.put(this.eventWriter.getID(), this.eventWriter);
-        System.out.println("Loading event writers: " + this.eventWriter.getID());
         return Collections.unmodifiableMap(map);
     }
 }

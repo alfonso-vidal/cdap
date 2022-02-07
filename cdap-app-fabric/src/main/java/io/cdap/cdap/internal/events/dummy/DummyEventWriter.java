@@ -13,7 +13,6 @@
 package io.cdap.cdap.internal.events.dummy;
 
 import com.google.inject.Inject;
-import io.cdap.cdap.internal.events.ProgramStatusEvent;
 import io.cdap.cdap.spi.events.Event;
 import io.cdap.cdap.spi.events.EventWriter;
 import io.cdap.cdap.spi.events.EventWriterContext;
@@ -25,7 +24,7 @@ import java.util.Collection;
 /**
  * Dummy implementation of {@link EventWriter} mainly for test proposals.
  * */
-public class DummyEventWriter implements EventWriter<Event<ProgramStatusEvent>> {
+public class DummyEventWriter implements EventWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(DummyEventWriter.class);
 
@@ -39,16 +38,12 @@ public class DummyEventWriter implements EventWriter<Event<ProgramStatusEvent>> 
 
     @Override
     public void initialize(EventWriterContext eventWriterContext) {
-        System.out.println("Initializing DummyEventWriter...");
         logger.info("Initializing DummyEventWriter...");
     }
 
     @Override
-    public void write(Collection<Event<ProgramStatusEvent>> events) {
-        events.forEach(event -> {
-            System.out.println("Event: " + event.toString());
-            logger.info("Event: " + event);
-        });
+    public void write(Collection<? extends Event<?>> events) {
+        events.forEach(event -> logger.info("Event: " + event));
     }
 
     @Override

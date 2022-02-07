@@ -19,7 +19,6 @@ import io.cdap.cdap.spi.events.EventWriterContext;
 import java.util.Collections;
 import java.util.Map;
 
-
 /**
  * Provides an initialized default context for EventWriter implementing {@link EventWriterContext}
  * */
