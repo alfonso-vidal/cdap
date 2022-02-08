@@ -23,31 +23,32 @@ import java.util.Collection;
 
 /**
  * Dummy implementation of {@link EventWriter} mainly for test proposals.
- * */
+ */
 public class DummyEventWriter implements EventWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(DummyEventWriter.class);
+  private static final Logger logger = LoggerFactory.getLogger(DummyEventWriter.class);
 
-    @Inject
-    public DummyEventWriter() {}
+  @Inject
+  public DummyEventWriter() {
+  }
 
-    @Override
-    public String getID() {
-        return "DummyEventWriter-01";
-    }
+  @Override
+  public String getID() {
+    return "DummyEventWriter-01";
+  }
 
-    @Override
-    public void initialize(EventWriterContext eventWriterContext) {
-        logger.info("Initializing DummyEventWriter...");
-    }
+  @Override
+  public void initialize(EventWriterContext eventWriterContext) {
+    logger.info("Initializing DummyEventWriter...");
+  }
 
-    @Override
-    public void write(Collection<? extends Event<?>> events) {
-        events.forEach(event -> logger.info("Event: " + event));
-    }
+  @Override
+  public void write(Collection<? extends Event<?>> events) {
+    events.forEach(event -> logger.info("Event: " + event));
+  }
 
-    @Override
-    public void close() throws Exception {
-        logger.info("Closing dummy writer");
-    }
+  @Override
+  public void close() throws Exception {
+    logger.info("Closing dummy writer");
+  }
 }

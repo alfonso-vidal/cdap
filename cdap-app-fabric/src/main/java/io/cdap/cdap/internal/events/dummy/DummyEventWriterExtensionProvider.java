@@ -32,33 +32,17 @@ import java.util.Set;
  */
 public class DummyEventWriterExtensionProvider implements EventWriterProvider {
 
-    private static final Set<String> ALLOWED_RESOURCES = createAllowedResources();
+  private final DummyEventWriter eventWriter;
 
-    private final DummyEventWriter eventWriter;
+  @Inject
+  public DummyEventWriterExtensionProvider(DummyEventWriter eventWriter) {
+    this.eventWriter = eventWriter;
+  }
 
-    /**
-     * Collects a set of the paths of the extensions classes.
-     */
-    private static Set<String> createAllowedResources() {
-        try {
-            return ClassPathResources.getResourcesWithDependencies(EventWriter.class.getClassLoader(),
-                    EventWriter.class);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to trace dependencies for provisioner extension. " +
-                    "Usage of metrics writer might fail.", e);
-        }
-    }
-
-    @Inject
-    public DummyEventWriterExtensionProvider(DummyEventWriter eventWriter) {
-        System.out.println("Injecting extension provider");
-        this.eventWriter = eventWriter;
-    }
-
-    @Override
-    public Map<String, EventWriter> loadEventWriters() {
-        Map<String, EventWriter> map = new HashMap<>();
-        map.put(this.eventWriter.getID(), this.eventWriter);
-        return Collections.unmodifiableMap(map);
-    }
+  @Override
+  public Map<String, EventWriter> loadEventWriters() {
+    Map<String, EventWriter> map = new HashMap<>();
+    map.put(this.eventWriter.getID(), this.eventWriter);
+    return Collections.unmodifiableMap(map);
+  }
 }

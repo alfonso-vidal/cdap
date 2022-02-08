@@ -21,18 +21,18 @@ import java.util.Map;
 
 /**
  * Provides an initialized default context for EventWriter implementing {@link EventWriterContext}
- * */
+ */
 public class DefaultEventWriterContext implements EventWriterContext {
 
-    private final Map<String, String> properties;
+  private final Map<String, String> properties;
 
-    DefaultEventWriterContext(CConfiguration cConf, String eventsWriterId) {
-        String prefix = String.format("%s.%s.", Constants.Event.EVENTS_WRITER_PREFIX, eventsWriterId);
-        this.properties = Collections.unmodifiableMap(cConf.getPropsWithPrefix(prefix));
-    }
+  DefaultEventWriterContext(CConfiguration cConf, String eventsWriterId) {
+    String prefix = String.format("%s.%s.", Constants.Event.EVENTS_WRITER_PREFIX, eventsWriterId);
+    this.properties = Collections.unmodifiableMap(cConf.getPropsWithPrefix(prefix));
+  }
 
-    @Override
-    public Map<String, String> getProperties() {
-        return properties;
-    }
+  @Override
+  public Map<String, String> getProperties() {
+    return properties;
+  }
 }
