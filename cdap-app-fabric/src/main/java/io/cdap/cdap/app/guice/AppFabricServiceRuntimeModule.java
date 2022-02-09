@@ -369,7 +369,6 @@ public final class AppFabricServiceRuntimeModule extends RuntimeModule {
         Multibinder.newSetBinder(binder(), EventPublisher.class);
       eventPublishersBinder.addBinding().to(ProgramStatusEventPublisher.class);
       bind(EventPublishManager.class).in(Scopes.SINGLETON);
-
       bind(EventWriterProvider.class).to(EventWriterExtensionProvider.class);
 
       Multibinder<HttpHandler> handlerBinder = Multibinder.newSetBinder(
