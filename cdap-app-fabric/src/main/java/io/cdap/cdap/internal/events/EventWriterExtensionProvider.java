@@ -30,24 +30,24 @@ import java.util.Map;
 import java.util.Set;
 
 public class EventWriterExtensionProvider extends AbstractExtensionLoader<String, EventWriter>
-    implements EventWriterProvider {
+  implements EventWriterProvider {
 
   private static final Set<String> ALLOWED_RESOURCES = createAllowedResources();
   private static final Set<String> ALLOWED_PACKAGES = createPackageSets(ALLOWED_RESOURCES);
 
-  private static Set<String> createAllowedResources() {
-    try {
-      return ClassPathResources.getResourcesWithDependencies(EventWriter.class.getClassLoader(),
-          EventWriter.class);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to trace dependencies for provisioner extension. " +
-          "Usage of events writer might fail.", e);
-    }
-  }
-
   @Inject
   public EventWriterExtensionProvider(CConfiguration cConf) {
     super(cConf.get(Constants.Event.EVENTS_WRITER_EXTENSIONS_DIR));
+  }
+
+  private static Set<String> createAllowedResources() {
+    try {
+      return ClassPathResources.getResourcesWithDependencies(EventWriter.class.getClassLoader(),
+                                                             EventWriter.class);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to trace dependencies for provisioner extension. " +
+                                   "Usage of events writer might fail.", e);
+    }
   }
 
   @Override

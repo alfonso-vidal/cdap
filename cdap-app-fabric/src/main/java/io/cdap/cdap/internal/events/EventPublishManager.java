@@ -36,7 +36,7 @@ public class EventPublishManager extends AbstractIdleService {
 
   @Inject
   EventPublishManager(CConfiguration cConf, Set<EventPublisher> eventPublishers,
-      EventWriterProvider eventWriterProvider) {
+                      EventWriterProvider eventWriterProvider) {
     this.publishEnabled = cConf.getBoolean(Constants.Event.PUBLISH_ENABLED);
     this.eventPublishers = eventPublishers;
     this.eventWriterProvider = eventWriterProvider;

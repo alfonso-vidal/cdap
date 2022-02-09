@@ -49,29 +49,28 @@ import javax.annotation.Nullable;
  * {@link EventPublisher} implementation for program status
  */
 public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberService
-    implements EventPublisher {
+  implements EventPublisher {
 
   private static final String PIPELINE_PROGRAM_NAME = "DataPipelineWorkflow";
   private static final String SUBSCRIBER_NAME = "program_status_event_publisher";
   private static final Gson GSON = new Gson();
   private static final String EVENT_VERSION = "v1";
-
-  private Collection<EventWriter> eventWriters;
   private final String instanceName;
   private final String projectName;
   private final CConfiguration cConf;
+  private Collection<EventWriter> eventWriters;
 
   @Inject
   protected ProgramStatusEventPublisher(String name, CConfiguration cConf,
-      MessagingService messagingService,
-      MetricsCollectionService metricsCollectionService,
-      TransactionRunner transactionRunner) {
+                                        MessagingService messagingService,
+                                        MetricsCollectionService metricsCollectionService,
+                                        TransactionRunner transactionRunner) {
     super(name, cConf,
-        cConf.get(Constants.AppFabric.PROGRAM_STATUS_RECORD_EVENT_TOPIC),
-        cConf.getInt(Constants.Event.PROGRAM_STATUS_FETCH_SIZE),
-        cConf.getInt(Constants.Event.PROGRAM_STATUS_POLL_INTERVAL_SECONDS), messagingService,
-        metricsCollectionService,
-        transactionRunner);
+          cConf.get(Constants.AppFabric.PROGRAM_STATUS_RECORD_EVENT_TOPIC),
+          cConf.getInt(Constants.Event.PROGRAM_STATUS_FETCH_SIZE),
+          cConf.getInt(Constants.Event.PROGRAM_STATUS_POLL_INTERVAL_SECONDS), messagingService,
+          metricsCollectionService,
+          transactionRunner);
     this.cConf = cConf;
     this.instanceName = cConf.get(Constants.Event.INSTANCE_NAME);
     this.projectName = cConf.get(Constants.Event.PROJECT_NAME);
@@ -82,7 +81,7 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
     this.eventWriters = eventWriters;
     this.eventWriters.forEach(eventWriter -> {
       DefaultEventWriterContext eventWriterContext = new DefaultEventWriterContext(cConf,
-          eventWriter.getID());
+                                                                                   eventWriter.getID());
       eventWriter.initialize(eventWriterContext);
     });
   }
@@ -106,18 +105,18 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
   @Override
   protected String loadMessageId(StructuredTableContext context) throws Exception {
     return AppMetadataStore.create(context)
-        .retrieveSubscriberState(getTopicId().getTopic(), SUBSCRIBER_NAME);
+      .retrieveSubscriberState(getTopicId().getTopic(), SUBSCRIBER_NAME);
   }
 
   @Override
   protected void storeMessageId(StructuredTableContext context, String messageId) throws Exception {
     AppMetadataStore.create(context)
-        .persistSubscriberState(getTopicId().getTopic(), SUBSCRIBER_NAME, messageId);
+      .persistSubscriberState(getTopicId().getTopic(), SUBSCRIBER_NAME, messageId);
   }
 
   @Override
   protected void processMessages(StructuredTableContext structuredTableContext,
-      Iterator<ImmutablePair<String, Notification>> messages) {
+                                 Iterator<ImmutablePair<String, Notification>> messages) {
     List<ProgramStatusEvent> programStatusEvents = new ArrayList<>();
     long publishTime = System.currentTimeMillis();
     messages.forEachRemaining(message -> {
@@ -140,23 +139,23 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
         return;
       }
       ProgramStatusEventDetails.Builder builder = ProgramStatusEventDetails
-          .getBuilder(programRunId.getRun(), programRunId.getProgram(), programRunId.getNamespace(),
-              programStatus,
-              RunIds.getTime(programRunId.getRun(), TimeUnit.MILLISECONDS));
+        .getBuilder(programRunId.getRun(), programRunId.getProgram(), programRunId.getNamespace(),
+                    programStatus,
+                    RunIds.getTime(programRunId.getRun(), TimeUnit.MILLISECONDS));
       String userArgsString = properties.get(ProgramOptionConstants.USER_OVERRIDES);
       String sysArgsString = properties.get(ProgramOptionConstants.SYSTEM_OVERRIDES);
       Type argsMapType = new TypeToken<Map<String, String>>() {
       }.getType();
       builder = builder
-          .withUserArgs(GSON.fromJson(userArgsString, argsMapType))
-          .withSystemArgs(GSON.fromJson(sysArgsString, argsMapType));
+        .withUserArgs(GSON.fromJson(userArgsString, argsMapType))
+        .withSystemArgs(GSON.fromJson(sysArgsString, argsMapType));
       if (programRunStatus.isEndState()) {
         builder = populateErrorDetails(builder, properties, programRunStatus);
       }
       ProgramStatusEventDetails programStatusEventDetails = builder.build();
       ProgramStatusEvent programStatusEvent = new ProgramStatusEvent(publishTime, EVENT_VERSION,
-          instanceName,
-          projectName, programStatusEventDetails);
+                                                                     instanceName,
+                                                                     projectName, programStatusEventDetails);
       programStatusEvents.add(programStatusEvent);
     });
 
@@ -165,13 +164,13 @@ public class ProgramStatusEventPublisher extends AbstractNotificationSubscriberS
 
   private boolean shouldPublish(ProgramRunStatus programRunStatus, ProgramRunId programRunId) {
     return PIPELINE_PROGRAM_NAME.equals(programRunId.getProgram())
-        && !NamespaceId.SYSTEM.equals(programRunId.getNamespaceId())
-        && (programRunStatus == ProgramRunStatus.STARTING || programRunStatus.isEndState());
+      && !NamespaceId.SYSTEM.equals(programRunId.getNamespaceId())
+      && (programRunStatus == ProgramRunStatus.STARTING || programRunStatus.isEndState());
   }
 
   private ProgramStatusEventDetails.Builder populateErrorDetails(
-      ProgramStatusEventDetails.Builder builder, Map<String, String> properties,
-      ProgramRunStatus status) {
+    ProgramStatusEventDetails.Builder builder, Map<String, String> properties,
+    ProgramRunStatus status) {
     if (status == ProgramRunStatus.KILLED) {
       return builder;
     }

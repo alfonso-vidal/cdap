@@ -20,7 +20,6 @@ import java.util.Collection;
 
 /**
  * Interface for an {@link Event} writer.
- *
  */
 public interface EventWriter extends AutoCloseable {
 
