@@ -44,57 +44,57 @@ import java.util.stream.Collectors;
  * Tests for the {@link ProgramStatusEventPublisher}.
  */
 public class ProgramStatusEventPublisherTest extends AppFabricTestBase {
-    private static final String MOCKED_NOTIFICATION_FILENAME = "mocked_pipeline_notification.json";
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProgramStatusEventPublisherTest.class);
+  private static final String MOCKED_NOTIFICATION_FILENAME = "mocked_pipeline_notification.json";
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProgramStatusEventPublisherTest.class);
 
-    private static EventPublisher eventPublisher;
+  private static EventPublisher eventPublisher;
 
-    @BeforeClass
-    public static void setupClass() throws IOException {
-        eventPublisher = getInjector().getInstance(ProgramStatusEventPublisher.class);
+  @BeforeClass
+  public static void setupClass() throws IOException {
+    eventPublisher = getInjector().getInstance(ProgramStatusEventPublisher.class);
+  }
+
+  @AfterClass
+  public static void tearDown() {
+    eventPublisher.stopPublish();
+    AppFabricTestHelper.shutdown();
+  }
+
+  @Test
+  public void testInitialize() {
+    EventWriterProvider provider = new DummyEventWriterExtensionProvider(new DummyEventWriter());
+    Map<String, EventWriter> eventWriterMap = provider.loadEventWriters();
+    try {
+      eventPublisher.initialize(eventWriterMap.values());
+      eventPublisher.startPublish();
+    } catch (Exception ex) {
+      LOGGER.error("Error during Event Publisher initialization.", ex);
+      Assert.fail("Error while initializing Event Publisher");
+    }
+  }
+
+  @Test
+  public void testMessageWorkflow() {
+    ProgramStatusEventPublisher programStatusEventPublisher = (ProgramStatusEventPublisher) eventPublisher;
+    try {
+      programStatusEventPublisher.processMessages(null, provideMockedMessages());
+    } catch (Exception e) {
+      LOGGER.error("Error during message process.", e);
+      Assert.fail("Error during message process");
     }
 
-    @AfterClass
-    public static void tearDown() {
-        eventPublisher.stopPublish();
-        AppFabricTestHelper.shutdown();
-    }
+  }
 
-    @Test
-    public void testInitialize() {
-        EventWriterProvider provider = new DummyEventWriterExtensionProvider(new DummyEventWriter());
-        Map<String, EventWriter> eventWriterMap = provider.loadEventWriters();
-        try {
-            eventPublisher.initialize(eventWriterMap.values());
-            eventPublisher.startPublish();
-        } catch (Exception ex) {
-            LOGGER.error("Error during Event Publisher initialization.", ex);
-            Assert.fail("Error while initializing Event Publisher");
-        }
-    }
-
-    @Test
-    public void testMessageWorkflow() {
-        ProgramStatusEventPublisher programStatusEventPublisher = (ProgramStatusEventPublisher) eventPublisher;
-        try {
-            programStatusEventPublisher.processMessages(null, provideMockedMessages());
-        } catch (Exception e) {
-            LOGGER.error("Error during message process.", e);
-            Assert.fail("Error during message process");
-        }
-
-    }
-
-    private Iterator<ImmutablePair<String, Notification>> provideMockedMessages() {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        InputStream notificationIS = classLoader.getResourceAsStream(MOCKED_NOTIFICATION_FILENAME);
-        Assert.assertNotNull(notificationIS);
-        String notificationJson = new BufferedReader(new InputStreamReader(notificationIS))
-                .lines().collect(Collectors.joining(System.lineSeparator()));
-        Notification notification = GSON.fromJson(notificationJson, Notification.class);
-        ImmutablePair<String, Notification> message = new ImmutablePair<>("test", notification);
-        List<ImmutablePair<String, Notification>> messageList = new ArrayList<>();
-        messageList.add(message);
-        return messageList.iterator();
-    }
+  private Iterator<ImmutablePair<String, Notification>> provideMockedMessages() {
+    ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+    InputStream notificationIS = classLoader.getResourceAsStream(MOCKED_NOTIFICATION_FILENAME);
+    Assert.assertNotNull(notificationIS);
+    String notificationJson = new BufferedReader(new InputStreamReader(notificationIS))
+      .lines().collect(Collectors.joining(System.lineSeparator()));
+    Notification notification = GSON.fromJson(notificationJson, Notification.class);
+    ImmutablePair<String, Notification> message = new ImmutablePair<>("test", notification);
+    List<ImmutablePair<String, Notification>> messageList = new ArrayList<>();
+    messageList.add(message);
+    return messageList.iterator();
+  }
 }
