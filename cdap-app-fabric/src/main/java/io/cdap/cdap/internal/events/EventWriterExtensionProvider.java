@@ -29,6 +29,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Implementation of {@link EventWriterProvider} which provides Event writer extension classes
+ * extending from {@link AbstractExtensionLoader}
+ */
 public class EventWriterExtensionProvider extends AbstractExtensionLoader<String, EventWriter>
   implements EventWriterProvider {
 
@@ -45,7 +49,7 @@ public class EventWriterExtensionProvider extends AbstractExtensionLoader<String
       return ClassPathResources.getResourcesWithDependencies(EventWriter.class.getClassLoader(),
                                                              EventWriter.class);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to trace dependencies for provisioner extension. " +
+      throw new RuntimeException("Failed to trace dependencies for writer extension. " +
                                    "Usage of events writer might fail.", e);
     }
   }

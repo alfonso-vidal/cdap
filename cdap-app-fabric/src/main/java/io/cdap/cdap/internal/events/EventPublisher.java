@@ -42,11 +42,4 @@ public interface EventPublisher {
    * Stop publish , when system is shutting down
    */
   void stopPublish();
-
-  /**
-   * Return the path where event writer extensions can be loaded from
-   *
-   * @return
-   */
-  String getEventWriterPath();
 }
