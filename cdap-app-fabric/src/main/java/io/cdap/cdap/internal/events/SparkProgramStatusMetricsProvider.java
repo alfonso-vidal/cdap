@@ -19,8 +19,11 @@ package io.cdap.cdap.internal.events;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
+import io.cdap.cdap.api.retry.RetryableException;
 import io.cdap.cdap.common.conf.CConfiguration;
 import io.cdap.cdap.common.conf.Constants;
+import io.cdap.cdap.common.service.Retries;
+import io.cdap.cdap.common.service.RetryStrategies;
 import io.cdap.cdap.proto.id.ProgramRunId;
 import io.cdap.common.http.HttpRequest;
 import io.cdap.common.http.HttpRequestConfig;
@@ -31,26 +34,29 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 import javax.inject.Inject;
 
-public class ProgramStatusMetricsProvider implements MetricsProvider {
+public class SparkProgramStatusMetricsProvider implements MetricsProvider {
 
   //Pending on actual location
   private final String SPARK_BASE_URL_CONFIGURATION = "";
   private final String SPARK_APPLICATIONS_ENDPOINT = "/api/v1/applications";
-  private final int MAX_RETIRES = 3;
 
-  private final Logger logger = LoggerFactory.getLogger(ProgramStatusMetricsProvider.class);
+  private final Logger logger = LoggerFactory.getLogger(SparkProgramStatusMetricsProvider.class);
   private final JsonParser jsonParser = new JsonParser();
 
   private final CConfiguration cConf;
   private final HttpRequestConfig httpRequestConfig;
 
   @Inject
-  public ProgramStatusMetricsProvider(CConfiguration cConf) {
+  public SparkProgramStatusMetricsProvider(CConfiguration cConf) {
     int connectionTimeout = cConf.getInt(Constants.HTTP_CLIENT_CONNECTION_TIMEOUT_MS);
     int readTimeout = cConf.getInt(Constants.HTTP_CLIENT_READ_TIMEOUT_MS);
     httpRequestConfig = new HttpRequestConfig(connectionTimeout, readTimeout, false);
@@ -60,62 +66,42 @@ public class ProgramStatusMetricsProvider implements MetricsProvider {
 
   @Override
   public ExecutionMetrics retrieveMetrics(ProgramRunId runId) {
-    ExecutionMetrics metrics = null;
-    int retriesCount = 0;
     String runIdStr = runId.getRun();
     String sparkHistoricBaseURL = cConf.get(SPARK_BASE_URL_CONFIGURATION);
-    String applicationsURL = String.format("%s%s", sparkHistoricBaseURL,
-                                           SPARK_APPLICATIONS_ENDPOINT);
-    while (Objects.isNull(metrics) && retriesCount < MAX_RETIRES) {
+    String applicationsURL = String.format("%s%s?minEndDate=%s", sparkHistoricBaseURL,
+                                           SPARK_APPLICATIONS_ENDPOINT, generateMaxTerminationDateParam());
+    return Retries.supplyWithRetries(() -> {
+      ExecutionMetrics metrics;
       HttpResponse applicationResponse;
-      applicationResponse = doGetWithRetries(applicationsURL);
+      try {
+        applicationResponse = doGet(applicationsURL);
+      } catch (IOException e) {
+        logger.warn("Error retrieving application response, retrying...", e);
+        throw new RetryableException(e);
+      }
       String attemptId = extractAttemptId(applicationResponse.getResponseBodyAsString(), runIdStr);
       if (Objects.nonNull(attemptId)) {
         HttpResponse stagesResponse;
         String stagesURL = String.format("%s/%s/%s/%s/stages", sparkHistoricBaseURL,
                                          SPARK_APPLICATIONS_ENDPOINT, runIdStr, attemptId);
-        stagesResponse = doGetWithRetries(stagesURL);
-        metrics = extractMetrics(stagesResponse.getResponseBodyAsString());
-      }
-      if (Objects.isNull(metrics)) {
-        retriesCount++;
-      }
-    }
-
-    //Won't able to retrieve metrics if the object is null so returns an empty metrics object
-    if (Objects.isNull(metrics)) {
-      metrics = ExecutionMetrics.emptyMetrics();
-    }
-    return metrics;
-  }
-
-  private HttpResponse doGetWithRetries(String url) {
-    int retriesCont = 0;
-    HttpResponse response = null;
-    while (Objects.isNull(response) && (retriesCont < MAX_RETIRES)) {
-      try {
-        response = doGet(url);
-        if (response.getResponseCode() != 200) {
-          response = null;
-          retriesCont++;
+        try {
+          stagesResponse = doGet(stagesURL);
+        } catch (IOException e) {
+          logger.warn("Error retrieving stages response, retrying...", e);
+          throw new RetryableException(e);
         }
-      } catch (IOException e) {
-        logger.error("Error during retry number " + (retriesCont + 1), e);
-        retriesCont++;
+        metrics = extractMetrics(stagesResponse.getResponseBodyAsString());
+        if (Objects.isNull(metrics)) {
+          logger.warn("Error during metrics extraction, retrying...");
+          throw new RetryableException();
+        } else {
+          return metrics;
+        }
+      } else {
+        logger.warn("Error during attemptId extraction, retrying...");
+        throw new RetryableException();
       }
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        logger.error("Error during retrying sleep", e);
-      }
-    }
-
-    if (Objects.isNull(response)) {
-      throw new RuntimeException("Error requesting for URL [" + url + "] after "
-                                   + retriesCont + " retries.");
-    }
-
-    return response;
+    }, RetryStrategies.exponentialDelay(1, 60, TimeUnit.SECONDS));
   }
 
   private HttpResponse doGet(String url) throws IOException {
@@ -158,5 +144,11 @@ public class ProgramStatusMetricsProvider implements MetricsProvider {
         stage.getAsJsonObject().get("inputBytes").getAsLong(),
         stage.getAsJsonObject().get("outputBytes").getAsLong()
       )).findFirst().orElseGet(ExecutionMetrics::nullMetrics);
+  }
+
+  private String generateMaxTerminationDateParam() {
+    LocalDateTime targetDate = LocalDateTime.now().minus(Duration.from(Duration.ofMinutes(5)));
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-ddTHH:mm:ss.SSSz");
+    return targetDate.format(formatter);
   }
 }

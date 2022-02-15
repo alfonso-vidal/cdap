@@ -27,9 +27,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
-public class ProgramStatusMetricsProviderTest extends AppFabricTestBase {
+public class SparkProgramStatusMetricsProviderTest extends AppFabricTestBase {
 
-  private static ProgramStatusMetricsProvider metricsProvider;
+  private static SparkProgramStatusMetricsProvider metricsProvider;
   private final String MOCKED_RUN_ID = "6354a561-886c-11ec-8688-42010a8e0035";
   private final String MOCKED_ATTEMPT_ID = "1";
   private final String MOCKED_APPLICATION_JSON = "mocked_spark_application_response.json";
@@ -37,7 +37,7 @@ public class ProgramStatusMetricsProviderTest extends AppFabricTestBase {
 
   @BeforeClass
   public static void setupClass() throws IOException {
-    metricsProvider = getInjector().getInstance(ProgramStatusMetricsProvider.class);
+    metricsProvider = getInjector().getInstance(SparkProgramStatusMetricsProvider.class);
   }
 
   @Test
