@@ -16,8 +16,11 @@
 
 package io.cdap.cdap.internal.events;
 
+import io.cdap.cdap.internal.app.runtime.ProgramOptionConstants;
+
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nullable;
 
 /**
@@ -37,12 +40,18 @@ public class ProgramStatusEventDetails {
   private final String error;
   @Nullable
   private final Collection<PluginMetrics> pluginMetrics;
+  @Nullable
+  private final ExecutionMetrics pipelineMetrics;
+  @Nullable
+  private final String workflowId;
 
   private ProgramStatusEventDetails(String runID, String programName, String namespace,
                                     String status, long eventTime,
                                     @Nullable Map<String, String> userArgs, @Nullable Map<String, String> systemArgs,
                                     @Nullable String error,
-                                    @Nullable Collection<PluginMetrics> pluginMetrics) {
+                                    @Nullable Collection<PluginMetrics> pluginMetrics,
+                                    @Nullable ExecutionMetrics pipelineMetrics,
+                                    @Nullable String workflowId) {
     this.runID = runID;
     this.programName = programName;
     this.namespace = namespace;
@@ -52,6 +61,8 @@ public class ProgramStatusEventDetails {
     this.systemArgs = systemArgs;
     this.error = error;
     this.pluginMetrics = pluginMetrics;
+    this.pipelineMetrics = pipelineMetrics;
+    this.workflowId = workflowId;
   }
 
   public static Builder getBuilder(String runID, String programName, String namespace,
@@ -81,6 +92,8 @@ public class ProgramStatusEventDetails {
     private Map<String, String> systemArgs;
     private String error;
     private Collection<PluginMetrics> pluginMetrics;
+    private ExecutionMetrics pipelineMetrics;
+    private String workflowId;
 
     Builder(String runID, String programName, String namespace, String status, long eventTime) {
       this.runID = runID;
@@ -97,6 +110,9 @@ public class ProgramStatusEventDetails {
 
     public Builder withSystemArgs(Map<String, String> systemArgs) {
       this.systemArgs = systemArgs;
+      if (Objects.nonNull(systemArgs)) {
+        this.workflowId = systemArgs.getOrDefault(ProgramOptionConstants.WORKFLOW_RUN_ID, "");
+      }
       return this;
     }
 
@@ -110,10 +126,15 @@ public class ProgramStatusEventDetails {
       return this;
     }
 
+    public Builder withPipelineMetrics(ExecutionMetrics pipelineMetrics) {
+      this.pipelineMetrics = pipelineMetrics;
+      return this;
+    }
+
     public ProgramStatusEventDetails build() {
       return new ProgramStatusEventDetails(runID, programName, namespace, status, eventTime,
                                            userArgs, systemArgs,
-                                           error, pluginMetrics);
+                                           error, pluginMetrics, pipelineMetrics, workflowId);
     }
 
   }
